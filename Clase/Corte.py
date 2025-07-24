@@ -30,4 +30,29 @@ class CorteGomory:
         else:
             return "Sentido de restricción no válido. Use '<=', '>=', o '=='"
     
+    # Función para resolver el problema
+    def resolver(self):
+        self.prob.solve()
+        print(f"Estado de la solución: {pulp.LpStatus[self.prob.status]}")
+        for nombre in self.vars:
+            print(f"{nombre} = {self.vars[nombre].varValue}")
+        print(f"Valor óptimo de Z = {self.prob.objective.value()}")
+    
+    # Función para agregar el corte de Gomory
+    def agregar_corte(self,tabla):
+        filas, columnas = tabla.shape
+        for i in range(filas):
+            # Buscamos las fulas fraccionarias (donde el termino independiente no es entero)
+            if not np.isclose(tabla[i, -1], np.floor(tabla[i, -1])):
+                # Generamos un corte basado en la parte fraccionaria
+                corte = np.floor(tabla[i, -1]) + 1 - tabla[i, :-1]
+                for j in range(columnas - 1):
+                    if not np.isclose(tabla[i, j], 0):
+                        corte += (tabla[i, j] - np.floor(tabla[i, j])) * self.vars[list(self.vars.keys())[j]]
+                
+                # Agregamos el corte como una restricción al problema
+                self.prob += corte <= 0, f'Corte_Gomory_{i}'
+                print(f"Corte agregado: {corte}")
+                return True
+        return False
     
